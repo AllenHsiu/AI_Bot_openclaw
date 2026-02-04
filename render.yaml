@@ -26,8 +26,8 @@ services:
     name: openclaw
     runtime: docker
     rootDir: openclaw
-    dockerfilePath: openclaw/Dockerfile
-    dockerContext: openclaw
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
     plan: starter
     healthCheckPath: /health
     envVars:
