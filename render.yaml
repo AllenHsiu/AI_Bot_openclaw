@@ -1,0 +1,49 @@
+# 同一 repo 兩個服務：LINE 橋接 (bridge) + OpenClaw Gateway
+# 部署：連到 Render Dashboard → New → Blueprint → 連此 repo
+
+services:
+  # 1. LINE 橋接：收 LINE Webhook，轉發到 OpenClaw，回傳 LINE
+  - type: web
+    name: line-bridge
+    runtime: python
+    rootDir: bridge
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -b 0.0.0.0:$PORT app:app
+    envVars:
+      - key: LINE_CHANNEL_ACCESS_TOKEN
+        sync: false
+      - key: LINE_CHANNEL_SECRET
+        sync: false
+      - key: OPENCLAW_GATEWAY_URL
+        sync: false
+      - key: OPENCLAW_GATEWAY_TOKEN
+        sync: false
+      - key: OPENCLAW_AGENT_ID
+        value: main
+
+  # 2. OpenClaw Gateway：Node.js Docker，需在 Render 啟用 Submodules
+  - type: web
+    name: openclaw
+    runtime: docker
+    rootDir: openclaw
+    dockerfilePath: openclaw/Dockerfile
+    dockerContext: openclaw
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: SETUP_PASSWORD
+        sync: false
+      - key: OPENCLAW_STATE_DIR
+        value: /data/.openclaw
+      - key: OPENCLAW_WORKSPACE_DIR
+        value: /data/workspace
+      - key: OPENCLAW_GATEWAY_TOKEN
+        generateValue: true
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=384
+    disk:
+      name: openclaw-data
+      mountPath: /data
+      sizeGB: 1
